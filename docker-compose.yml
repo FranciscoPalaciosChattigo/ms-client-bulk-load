@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  ms-client-bulk-load:
+    build: .
+    container_name: ms-client-bulk-load
+    ports:
+      - "8000:8000"
+    environment:
+      - IG_DB_MONGO_URL=http://host.docker.internal:8087
+    volumes:
+      - ./app:/app/app
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
