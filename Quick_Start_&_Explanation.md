@@ -50,17 +50,21 @@ El servicio arranca en **http://localhost:8088**
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| `POST` | `/api/v1/upload` | Subir archivo CSV/Excel |
-| `DELETE` | `/api/v1/collection/{client_id}` | Eliminar colección |
-| `GET` | `/api/v1/health` | Health check |
+| `POST` | `/bulk-load-data/file` | Subir archivo CSV/Excel |
+| `GET` | `/bulk-load-data/health` | Health check |
 
 ### Ejemplo de uso
 
 ```bash
 # Subir un archivo CSV
-curl -X POST "http://localhost:8088/api/v1/upload" \
-  -F "client_id=mi_cliente" \
-  -F "file=@datos.csv"
+curl -X 'POST' \
+  'http://localhost:8088/bulk-load-data/file' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: multipart/form-data' \
+  -F 'cliente=test' \
+  -F 'numero_cliente=22' \
+  -F 'file=@test-data-100k - test_data.csv;type=text/csv'
+
 ```
 
 ---
