@@ -27,7 +27,7 @@ Un microservicio **Python + FastAPI** que permite cargar archivos **CSV y Excel*
 
 ```bash
 # 1. Crear y activar entorno virtual
-cd /Users/franciscopalacios/Desktop/ms-client-bulk-load
+cd /ms-client-bulk-load
 python -m venv .venv
 source .venv/bin/activate
 

@@ -75,7 +75,7 @@ class TaskProcessor:
         """
         Actualizar el estado de una tarea
 
-        Args:
+        Args:100
             task_id: ID de la tarea
             status: Estado actual (queued, processing, completed, failed)
             progress: Progreso en porcentaje (0-100)
