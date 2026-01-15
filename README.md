@@ -93,4 +93,3 @@ Una vez corriendo, puedes acceder a:
 
 ---
 
-¿Quieres que te ayude a levantar el proyecto o que profundice en alguna parte específica?
