@@ -18,7 +18,7 @@ Un microservicio **Python + FastAPI** que permite cargar archivos **CSV y Excel*
 ### Flujo de trabajo
 1. **Recibes** un archivo CSV o Excel vía POST
 2. **Parsea** el archivo con Pandas
-3. **Divide** en batches de 1000 filas
+3. **Divide** en batches de X filas
 4. **Envía** cada batch a `ig-db-mongo` para guardarlo en MongoDB
 
 ---

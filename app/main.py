@@ -69,21 +69,3 @@ if __name__ == "__main__":
         reload=True
     )
 
-#
-#
-# import pandas as pd
-#
-# # Nombre de tu archivo de entrada y salida
-# input_csv = '/Users/franciscopalacios/Desktop/ms-client-bulk-load 2/app/test-data-100k.csv'  # Asegúrate que este nombre coincida con tu archivo
-# output_json = 'test_data_mongo.json'
-#
-# print("Leyendo archivo CSV...")
-# # Leemos el CSV
-# df = pd.read_csv(input_csv)
-#
-# print("Convirtiendo a JSON...")
-# # Convertimos a JSON con formato 'records' que crea una lista de objetos
-# # indent=4 es para que sea legible, quítalo si quieres reducir el tamaño del archivo
-# df.to_json(output_json, orient='records', indent=4)
-#
-# print(f"¡Listo! Archivo guardado como: {output_json}")
