@@ -1,5 +1,6 @@
 import csv
 import io
+import string
 import pandas as pd
 from typing import List, Dict, Any, AsyncGenerator
 import logging
@@ -15,6 +16,26 @@ class FileProcessor:
         self.settings = get_settings()
         self.batch_size = self.settings.BATCH_SIZE
 
+    def clean_value(self, value: Any) -> str:
+        """
+        Limpiar un valor: remover espacios y puntuación al final
+
+        Args:
+            value: Valor a limpiar
+
+        Returns:
+            String limpio
+        """
+        if value is None:
+            return ""
+
+        # Convertir a string y limpiar
+        cleaned = str(value).strip()
+        # Remover puntuación y espacios al final
+        cleaned = cleaned.rstrip(string.punctuation + string.whitespace)
+
+        return cleaned
+
     async def process_csv(
             self,
             file_content: bytes,
@@ -28,7 +49,7 @@ class FileProcessor:
             filename: Nombre del archivo
 
         Yields:
-            Batches de documentos
+            Batches de documentos con _id = primera columna
         """
         try:
             # Intentar UTF-8 primero
@@ -41,14 +62,30 @@ class FileProcessor:
         csv_file = io.StringIO(content_str)
         csv_reader = csv.DictReader(csv_file)
 
+        # Obtener headers y primera columna
+        headers = csv_reader.fieldnames
+        if not headers or len(headers) == 0:
+            raise ValueError("El archivo CSV no tiene headers")
+
+        first_column = headers[0]
+        logger.info(f"📋 Primera columna (será _id): {first_column}")
+
         batch = []
         row_count = 0
 
         for row in csv_reader:
             row_count += 1
-            # Convertir None a string vacío
-            clean_row = {k: (v if v is not None else "") for k, v in row.items()}
-            batch.append(clean_row)
+
+            # Limpiar todos los valores
+            clean_row = {k: self.clean_value(v) for k, v in row.items()}
+
+            # Usar primera columna como _id
+            document = {
+                "_id": clean_row.get(first_column, ""),
+                **clean_row
+            }
+
+            batch.append(document)
 
             if len(batch) >= self.batch_size:
                 logger.info(f"📦 Batch de {len(batch)} filas listo")
@@ -75,7 +112,7 @@ class FileProcessor:
             filename: Nombre del archivo
 
         Yields:
-            Batches de documentos
+            Batches de documentos con _id = primera columna
         """
         try:
             # Leer Excel con pandas
@@ -84,10 +121,23 @@ class FileProcessor:
             # Reemplazar NaN con string vacío
             df = df.fillna("")
 
-            # Convertir a lista de diccionarios
-            records = df.to_dict('records')
-            total = len(records)
+            # Primera columna como _id
+            first_column = df.columns[0]
+            logger.info(f"📋 Primera columna (será _id): {first_column}")
 
+            # Convertir a lista de diccionarios con _id y limpieza
+            records = []
+            for _, row in df.iterrows():
+                # Limpiar todos los valores
+                clean_row = {k: self.clean_value(v) for k, v in row.to_dict().items()}
+
+                document = {
+                    "_id": clean_row.get(first_column, ""),
+                    **clean_row
+                }
+                records.append(document)
+
+            total = len(records)
             logger.info(f"📊 Excel leído: {total} filas")
 
             # Dividir en batches

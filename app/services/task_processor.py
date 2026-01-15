@@ -22,13 +22,13 @@ class TaskProcessor:
         # Almacenamiento en memoria (después reemplazar con Redis/DB)
         self.task_store: Dict[str, Dict[str, Any]] = {}
 
-    def create_task(self, cliente: str, numero_cliente: str, filename: str) -> str:
+    def create_task(self, client_id: str, business_name: str, filename: str) -> str:
         """
         Crear una nueva tarea y retornar su ID
 
         Args:
-            cliente: Nombre del cliente
-            numero_cliente: ID del cliente
+            client_id: ID del cliente
+            business_name: Nombre del negocio
             filename: Nombre del archivo
 
         Returns:
@@ -42,8 +42,8 @@ class TaskProcessor:
             "message": "Archivo recibido, en cola para procesamiento",
             "total_rows": 0,
             "processed_rows": 0,
-            "cliente": cliente,
-            "numero_cliente": numero_cliente,
+            "client_id": client_id,
+            "business_name": business_name,
             "filename": filename
         }
 
@@ -106,8 +106,8 @@ class TaskProcessor:
             task_id: str,
             file_content: bytes,
             filename: str,
-            cliente: str,
-            numero_cliente: str
+            client_id: str,
+            business_name: str
     ):
         """
         Procesar archivo en background y actualizar estado
@@ -160,8 +160,8 @@ class TaskProcessor:
 
                 # Enviar batch a ig-db-mongo
                 success = await mongo_client.bulk_import(
-                    cliente=cliente,
-                    numero_cliente=numero_cliente,
+                    business_name=business_name,
+                    client_id=client_id,
                     all_documents=batch
                 )
 
@@ -171,7 +171,7 @@ class TaskProcessor:
 
             # Calcular tiempo de procesamiento
             processing_time = time.time() - start_time
-            collection_name = self.mapper.build_collection_name(cliente, numero_cliente)
+            collection_name = self.mapper.build_collection_name(business_name, client_id)
 
             # Estado final
             if failed_batches == 0:

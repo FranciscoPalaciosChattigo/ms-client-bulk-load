@@ -1,33 +1,40 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import logging
-from app.api.routes import router
-# from app.api.routes import router
-from app.config.settings import get_settings
+from contextlib import asynccontextmanager
 import logging
 import sys
+from app.api.routes import router
+from app.config.settings import get_settings
 
-# Configurar logging para que vaya a stdout (blanco) en lugar de stderr (rojo)
+# Logging a stdout (para evitar logs en rojo)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)  # ← Clave: usar stdout
-    ],
-    force=True  # ← Sobreescribir configuración existente
+    handlers=[logging.StreamHandler(sys.stdout)],
+    force=True
 )
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-# Crear aplicación FastAPI
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("🚀 Iniciando MS Client Bulk Load")
+    logger.info(f"🔗 ig-db-mongo URL: {settings.IG_DB_MONGO_URL}")
+    yield
+    # Shutdown
+    logger.info("🛑 Cerrando MS Client Bulk Load")
+
+
 app = FastAPI(
     title=settings.API_TITLE,
     version=settings.API_VERSION,
-    description="Microservicio para carga masiva de archivos CSV/Excel"
+    description="Microservicio para carga masiva de archivos CSV/Excel",
+    lifespan=lifespan  # ← Reemplaza on_event
 )
 
-# Configurar CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,19 +43,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Incluir rutas
 app.include_router(router)
-
-
-@app.on_event("startup")
-async def startup_event():
-    logger.info("🚀 Iniciando MS Client Bulk Load")
-    logger.info(f"🔗 ig-db-mongo URL: {settings.IG_DB_MONGO_URL}")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("🛑 Cerrando MS Client Bulk Load")
 
 
 @app.get("/")
@@ -62,10 +57,4 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=8099,
-        reload=True
-    )
-
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8088, reload=True)

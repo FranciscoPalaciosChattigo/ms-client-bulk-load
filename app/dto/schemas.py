@@ -4,16 +4,16 @@ from typing import Optional
 
 class UploadRequest(BaseModel):
     """Request para upload de archivo"""
-    cliente: str = Field(..., description="Nombre del cliente")
-    numero_cliente: str = Field(..., description="ID/número del cliente o archivo")
+    client_id: str = Field(..., description="ID del cliente")
+    business_name: str = Field(..., description="Nombre del negocio")
 
 
 class UploadResponse(BaseModel):
     """Response del proceso de carga"""
     success: bool
     message: str
-    cliente: str
-    numero_cliente: str
+    client_id: str
+    business_name: str
     collection_name: str
     filename: str
     total_rows: int

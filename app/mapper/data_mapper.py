@@ -48,15 +48,24 @@ class DataMapper:
         }
 
     @staticmethod
-    def build_collection_name(cliente: str, numero_cliente: str) -> str:
+    def build_collection_name(client_id: str, business_name: str) -> str:
         """
-        Construir nombre de colección
-
-        Args:
-            cliente: Nombre del cliente
-            numero_cliente: ID/número del cliente
-
-        Returns:
-            Nombre de colección concatenado
+        Construir nombre de colección según formato requerido
+        Formato: clientId/businessName-DB
         """
-        return f"{cliente}{numero_cliente}"
+        return f"{client_id}/{business_name}-DB"
+
+    @staticmethod
+    def map_to_bulk_import_request(
+            client_id: str,
+            business_name: str,
+            documents: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Mapear datos al formato de BulkImportRequest
+        """
+        return {
+            "clientId": client_id,
+            "businessName": business_name,
+            "data": documents
+        }

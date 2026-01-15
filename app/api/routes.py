@@ -1,7 +1,8 @@
 """
 API Routes - Endpoints REST
 """
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks
+import httpx
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks, Query
 import logging
 from app.services.task_processor import task_processor
 from app.config.settings import get_settings
@@ -14,21 +15,17 @@ settings = get_settings()
 
 @router.post("/file")
 async def upload_file(
-        background_tasks: BackgroundTasks,
-        cliente: str = Form(..., description="Nombre del cliente"),
-        numero_cliente: str = Form(..., description="ID/número del cliente o archivo"),
-        file: UploadFile = File(..., description="Archivo CSV o Excel")
+    background_tasks: BackgroundTasks,
+    client_id: str = Form(..., description="ID del cliente"),
+    business_name: str = Form(..., description="Nombre del negocio"),
+    file: UploadFile = File(..., description="Archivo CSV o Excel")
 ):
     """
-    Endpoint para cargar archivo CSV o Excel
-
-    Retorna inmediatamente un task_id y procesa el archivo en background.
-    El progreso se puede consultar con GET /bulk-load-data/status/{task_id}
-
+    ...
     Args:
-        cliente: Nombre del cliente
-        numero_cliente: ID del cliente o archivo
-        file: Archivo CSV o Excel a procesar
+        client_id: ID del cliente
+        business_name: Nombre del negocio
+        file: Archivo a procesar
 
     Returns:
         task_id: ID de la tarea para consultar progreso
@@ -58,12 +55,12 @@ async def upload_file(
             )
 
         logger.info(f"📁 Archivo recibido: {file.filename} ({file_size_mb:.2f}MB)")
-        logger.info(f"👤 Cliente: {cliente}, Número: {numero_cliente}")
+        logger.info(f"👤 Cliente ID: {client_id}, Negocio: {business_name}")
 
         # Crear tarea
         task_id = task_processor.create_task(
-            cliente=cliente,
-            numero_cliente=numero_cliente,
+            client_id=client_id,
+            business_name=business_name,
             filename=file.filename
         )
 
@@ -73,8 +70,8 @@ async def upload_file(
             task_id,
             file_content,
             file.filename,
-            cliente,
-            numero_cliente
+            client_id,
+            business_name
         )
 
         # Responder inmediatamente
@@ -82,8 +79,8 @@ async def upload_file(
             "task_id": task_id,
             "status": "queued",
             "message": "Archivo recibido. Procesando en background.",
-            "cliente": cliente,
-            "numero_cliente": numero_cliente,
+            "client_id": client_id,
+            "business_name": business_name,
             "filename": file.filename
         }
 
@@ -96,6 +93,75 @@ async def upload_file(
             detail=f"{ErrorMessages.INTERNAL_ERROR}: {str(e)}"
         )
 
+
+@router.get("/{clientId}/{businessName}/search/{id}")
+async def search_document(
+        clientId: str,
+        businessName: str,
+        id: str
+):
+    """
+    Buscar un documento específico por su ID en una colección
+
+    Args:
+        clientId: ID del cliente
+        businessName: Nombre del negocio
+        id: ID del documento (valor de la primera columna del Excel)
+
+    Returns:
+        Documento encontrado o mensaje de no encontrado
+    """
+    try:
+        url = f"{settings.IG_DB_MONGO_URL}/api/rest/v1/google-sheet/{clientId}/{businessName}/search?id={id}"
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.get(url)
+
+            if response.status_code == 200:
+                return response.json()
+            else:
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"Error consultando ig-db-mongo: {response.text}"
+                )
+
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Timeout consultando ig-db-mongo")
+    except Exception as e:
+        logger.error(f"❌ Error buscando documento: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{clientId}/collections")
+async def list_collections(clientId: str):
+    """
+    Listar todas las colecciones de un cliente
+
+    Args:
+        clientId: ID del cliente
+
+    Returns:
+        Lista de colecciones que pertenecen al cliente
+    """
+    try:
+        url = f"{settings.IG_DB_MONGO_URL}/api/rest/v1/google-sheet/{clientId}/collections"
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.get(url)
+
+            if response.status_code == 200:
+                return response.json()
+            else:
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"Error consultando ig-db-mongo: {response.text}"
+                )
+
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Timeout consultando ig-db-mongo")
+    except Exception as e:
+        logger.error(f"❌ Error listando colecciones: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/status/{task_id}")
 async def get_task_status(task_id: str):
